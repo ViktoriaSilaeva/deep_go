@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -9,32 +10,151 @@ import (
 
 // go test -v homework_test.go
 
+type Node struct {
+	key   int
+	value int
+	lnode *Node
+	rnode *Node
+}
+
 type OrderedMap struct {
-	// need to implement
+	root   *Node
+	nodeSz int
 }
 
 func NewOrderedMap() OrderedMap {
-	return OrderedMap{} // need to implement
+	return OrderedMap{}
+}
+
+func NewNode(key, val int) *Node {
+	return &Node{key: key, value: val}
 }
 
 func (m *OrderedMap) Insert(key, value int) {
-	// need to implement
+	if m.root == nil {
+		m.root = NewNode(key, value)
+		m.nodeSz++
+		return
+	}
+
+	var tmp *Node = m.root
+	for {
+		if tmp.key^key == 0 {
+			tmp.value = value
+			break
+		}
+
+		if tmp.key > key {
+			if tmp.lnode != nil {
+				tmp = tmp.lnode
+				continue
+			}
+			tmp.lnode = NewNode(key, value)
+			m.nodeSz++
+			break
+		}
+
+		if tmp.key < key {
+			if tmp.rnode != nil {
+				tmp = tmp.rnode
+				continue
+			}
+			tmp.rnode = NewNode(key, value)
+			m.nodeSz++
+			break
+		}
+	}
 }
 
 func (m *OrderedMap) Erase(key int) {
-	// need to implement
+	var parentNode, deleteNode *Node = m.root.RecursiveContains(key)
+	if parentNode == nil && deleteNode == nil {
+		return
+	}
+
+	if deleteNode.rnode == nil {
+		if parentNode.lnode == deleteNode {
+			parentNode.lnode = deleteNode.lnode
+		} else {
+			parentNode.rnode = deleteNode.lnode
+		}
+		deleteNode.lnode = nil
+	} else {
+		var parntmp, tmp *Node = deleteNode, deleteNode.rnode
+		for tmp.lnode != nil {
+			parntmp = tmp
+			tmp = tmp.lnode
+		}
+		deleteNode.key = tmp.key
+		if parntmp.lnode == tmp {
+			parntmp.lnode = tmp.rnode
+		} else {
+			parntmp.rnode = tmp.rnode
+		}
+	}
+	m.nodeSz--
+}
+
+func (node *Node) RecursiveContains(key int) (*Node, *Node) {
+	if node == nil {
+		return nil, nil
+	}
+
+	if node.lnode != nil && node.lnode.key^key == 0 {
+		return node, node.lnode
+	}
+	if node.rnode != nil && node.rnode.key^key == 0 {
+		return node, node.rnode
+	}
+
+	if node.key > key {
+		return node.lnode.RecursiveContains(key)
+	} else {
+		return node.rnode.RecursiveContains(key)
+	}
 }
 
 func (m *OrderedMap) Contains(key int) bool {
-	return false // need to implement
+	var tmp *Node = m.root
+	for tmp != nil {
+		if tmp.key^key == 0 {
+			return true
+		}
+		if tmp.key > key {
+			tmp = tmp.lnode
+		} else {
+			tmp = tmp.rnode
+		}
+	}
+	return false
 }
 
 func (m *OrderedMap) Size() int {
-	return 0 // need to implement
+	return m.nodeSz
+}
+
+func (node *Node) RecursiveBypass(action func(int, int)) {
+	if node == nil {
+		return
+	}
+
+	node.lnode.RecursiveBypass(action)
+	action(node.key, node.value)
+	node.rnode.RecursiveBypass(action)
 }
 
 func (m *OrderedMap) ForEach(action func(int, int)) {
-	// need to implement
+	m.root.RecursiveBypass(action)
+}
+
+func (node *Node) PrintNode() {
+	fmt.Printf("%p : %d : <%p, %p> \n", node, node.key, node.lnode, node.rnode)
+	if node.lnode != nil {
+		node.lnode.PrintNode()
+	}
+	if node.rnode != nil {
+		node.rnode.PrintNode()
+	}
 }
 
 func TestCircularQueue(t *testing.T) {
@@ -48,6 +168,8 @@ func TestCircularQueue(t *testing.T) {
 	data.Insert(4, 4)
 	data.Insert(12, 12)
 	data.Insert(14, 14)
+
+	//data.root.PrintNode()
 
 	assert.Equal(t, 7, data.Size())
 	assert.True(t, data.Contains(4))
@@ -72,6 +194,8 @@ func TestCircularQueue(t *testing.T) {
 	assert.True(t, data.Contains(12))
 	assert.False(t, data.Contains(2))
 	assert.False(t, data.Contains(14))
+
+	//data.root.PrintNode()
 
 	keys = nil
 	expectedKeys = []int{4, 5, 10, 12}
