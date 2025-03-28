@@ -6,40 +6,41 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/constraints"
 )
 
 // go test -v homework_test.go
 
-type Node struct {
-	key   int
-	value int
-	lnode *Node
-	rnode *Node
+type Node[T constraints.Ordered, V any] struct {
+	key   T
+	value V
+	lnode *Node[T, V]
+	rnode *Node[T, V]
 }
 
-type OrderedMap struct {
-	root   *Node
+type OrderedMap[T constraints.Ordered, V any] struct {
+	root   *Node[T, V]
 	nodeSz int
 }
 
-func NewOrderedMap() OrderedMap {
-	return OrderedMap{}
+func NewOrderedMap[T constraints.Ordered, V any]() OrderedMap[T, V] {
+	return OrderedMap[T, V]{}
 }
 
-func NewNode(key, val int) *Node {
-	return &Node{key: key, value: val}
+func NewNode[T constraints.Ordered, V any](key T, val V) *Node[T, V] {
+	return &Node[T, V]{key: key, value: val}
 }
 
-func (m *OrderedMap) Insert(key, value int) {
+func (m *OrderedMap[T, V]) Insert(key T, value V) {
 	if m.root == nil {
 		m.root = NewNode(key, value)
 		m.nodeSz++
 		return
 	}
 
-	var tmp *Node = m.root
+	var tmp *Node[T, V] = m.root
 	for {
-		if tmp.key^key == 0 {
+		if tmp.key == key {
 			tmp.value = value
 			break
 		}
@@ -66,8 +67,8 @@ func (m *OrderedMap) Insert(key, value int) {
 	}
 }
 
-func (m *OrderedMap) Erase(key int) {
-	var parentNode, deleteNode *Node = m.root.RecursiveContains(key)
+func (m *OrderedMap[T, V]) Erase(key T) {
+	var parentNode, deleteNode *Node[T, V] = m.root.RecursiveContains(key)
 	if parentNode == nil && deleteNode == nil {
 		return
 	}
@@ -80,7 +81,7 @@ func (m *OrderedMap) Erase(key int) {
 		}
 		deleteNode.lnode = nil
 	} else {
-		var parntmp, tmp *Node = deleteNode, deleteNode.rnode
+		var parntmp, tmp *Node[T, V] = deleteNode, deleteNode.rnode
 		for tmp.lnode != nil {
 			parntmp = tmp
 			tmp = tmp.lnode
@@ -95,15 +96,15 @@ func (m *OrderedMap) Erase(key int) {
 	m.nodeSz--
 }
 
-func (node *Node) RecursiveContains(key int) (*Node, *Node) {
+func (node *Node[T, V]) RecursiveContains(key T) (*Node[T, V], *Node[T, V]) {
 	if node == nil {
 		return nil, nil
 	}
 
-	if node.lnode != nil && node.lnode.key^key == 0 {
+	if node.lnode != nil && node.lnode.key == key {
 		return node, node.lnode
 	}
-	if node.rnode != nil && node.rnode.key^key == 0 {
+	if node.rnode != nil && node.rnode.key == key {
 		return node, node.rnode
 	}
 
@@ -114,10 +115,10 @@ func (node *Node) RecursiveContains(key int) (*Node, *Node) {
 	}
 }
 
-func (m *OrderedMap) Contains(key int) bool {
-	var tmp *Node = m.root
+func (m *OrderedMap[T, V]) Contains(key T) bool {
+	var tmp *Node[T, V] = m.root
 	for tmp != nil {
-		if tmp.key^key == 0 {
+		if tmp.key == key {
 			return true
 		}
 		if tmp.key > key {
@@ -129,11 +130,11 @@ func (m *OrderedMap) Contains(key int) bool {
 	return false
 }
 
-func (m *OrderedMap) Size() int {
+func (m *OrderedMap[T, V]) Size() int {
 	return m.nodeSz
 }
 
-func (node *Node) RecursiveBypass(action func(int, int)) {
+func (node *Node[T, V]) RecursiveBypass(action func(T, V)) {
 	if node == nil {
 		return
 	}
@@ -143,12 +144,12 @@ func (node *Node) RecursiveBypass(action func(int, int)) {
 	node.rnode.RecursiveBypass(action)
 }
 
-func (m *OrderedMap) ForEach(action func(int, int)) {
+func (m *OrderedMap[T, V]) ForEach(action func(T, V)) {
 	m.root.RecursiveBypass(action)
 }
 
-func (node *Node) PrintNode() {
-	fmt.Printf("%p : %d : <%p, %p> \n", node, node.key, node.lnode, node.rnode)
+func (node *Node[T, V]) PrintNode() {
+	fmt.Printf("%p : %v : <%p, %p> \n", node, node.key, node.lnode, node.rnode)
 	if node.lnode != nil {
 		node.lnode.PrintNode()
 	}
@@ -158,7 +159,7 @@ func (node *Node) PrintNode() {
 }
 
 func TestCircularQueue(t *testing.T) {
-	data := NewOrderedMap()
+	data := NewOrderedMap[int, int]()
 	assert.Zero(t, data.Size())
 
 	data.Insert(10, 10)
