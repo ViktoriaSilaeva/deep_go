@@ -15,8 +15,8 @@ type COWBuffer struct {
 }
 
 func NewCOWBuffer(data []byte) COWBuffer {
-	var simpleOne int = 1
-	return COWBuffer{data: data, refs: &simpleOne}
+	var defRefs int = 1
+	return COWBuffer{data: data, refs: &defRefs}
 }
 
 func (b *COWBuffer) Clone() COWBuffer {
@@ -39,13 +39,12 @@ func (b *COWBuffer) Update(index int, value byte) bool {
 	}
 
 	if *b.refs > 1 {
-		var simpleOne int = 1
-		dst := make([]byte, len(b.data))
-		copy(dst, b.data)
-		dst[index] = value
+		dst := NewCOWBuffer(make([]byte, len(b.data)))
+		copy(dst.data, b.data)
+		dst.data[index] = value
 		*b.refs--
-		b.data = dst
-		b.refs = &simpleOne
+		b.data = dst.data
+		b.refs = dst.refs
 	} else {
 		b.data[index] = value
 	}
