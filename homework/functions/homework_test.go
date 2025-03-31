@@ -23,7 +23,7 @@ func Filter[T any](data []T, action func(T) bool) []T {
 	if len(data) == 0 {
 		return data
 	}
-	newData := make([]T, 0, (len(data)>>1)+1)
+	newData := make([]T, 0, (len(data)/2)+1)
 
 	for _, value := range data {
 		if action(value) {
